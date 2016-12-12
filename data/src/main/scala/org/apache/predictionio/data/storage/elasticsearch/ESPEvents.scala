@@ -23,6 +23,11 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.joda.time.DateTime
 
+// TODO for elasticsearch
+import org.apache.spark.SparkConf
+import org.elasticsearch.spark._
+
+
 class ESPEvents extends PEvents {
 
   override
@@ -38,8 +43,20 @@ class ESPEvents extends PEvents {
     targetEntityId: Option[Option[String]] = None
     )(sc: SparkContext): RDD[Event] = {
 
-    ???
+    // TODO Spark Configuration
+    val conf = new SparkConf().setAppName("").setMaster("")
+    conf.set("es.index.auto.create", "true")
 
+    // TODO sc is used as SparkContext
+    // Spark Configuration not needed?
+
+    val rdd = sc.newAPIHadoopRDD(conf, classOf[EsInputFormat[Text, MapWritable]],
+      classOf[Text], classOf[MapWritable]
+    ).map {
+      case (key, row) => ??? // なんかわからんけどEventの型に変換
+    }
+
+    rdd
   }
 
   override
