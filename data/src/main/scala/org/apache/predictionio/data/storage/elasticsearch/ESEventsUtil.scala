@@ -18,6 +18,7 @@
 
 package org.apache.predictionio.data.storage.elasticsearch
 
+import org.apache.hadoop.io.{LongWritable, Text, MapWritable}
 import org.apache.predictionio.data.storage.Event
 import org.apache.predictionio.data.storage.EventValidation
 import org.apache.predictionio.data.storage.DataMap
@@ -48,45 +49,43 @@ import java.util.UUID
 
 object ESEventsUtil {
 
-  def resultToEvent(result: Result, appId: Int): Event = {
-    val rowKey = RowKey(result.getRow())
+  implicit val formats = DefaultFormats
 
-    val eBytes = Bytes.toBytes("e")
-    // val e = result.getFamilyMap(eBytes)
+  def resultToEvent(result: MapWritable, appId: Int): Event = {
 
     def getStringCol(col: String): String = {
-      val r = result.getValue(eBytes, colNames(col))
+      val r = result.get(col).asInstanceOf[Text]
       require(r != null,
         s"Failed to get value for column ${col}. " +
-          s"Rowkey: ${rowKey.toString} " +
-          s"StringBinary: ${Bytes.toStringBinary(result.getRow())}.")
+          s"StringBinary: ${r.getBytes()}.")
 
-      Bytes.toString(r)
+      r.toString()
     }
 
     def getLongCol(col: String): Long = {
-      val r = result.getValue(eBytes, colNames(col))
+      val r = result.get(col).asInstanceOf[LongWritable]
       require(r != null,
         s"Failed to get value for column ${col}. " +
-          s"Rowkey: ${rowKey.toString} " +
-          s"StringBinary: ${Bytes.toStringBinary(result.getRow())}.")
+          s"StringBinary: ${r.get()}.")
 
-      Bytes.toLong(r)
+      r.get()
     }
 
     def getOptStringCol(col: String): Option[String] = {
-      val r = result.getValue(eBytes, colNames(col))
+      val r = result.get(col).asInstanceOf[Text]
       if (r == null) {
         None
       } else {
-        Some(Bytes.toString(r))
+        Some(r.toString())
       }
     }
 
+    // TODO: elasticsearch timestamp format
     def getTimestamp(col: String): Long = {
-      result.getColumnLatestCell(eBytes, colNames(col)).getTimestamp()
+      result.get(col).asInstanceOf[LongWritable].get()
     }
 
+    val eventId = getOptStringCol("eventId") // TODO: use `_id` field?
     val event = getStringCol("event")
     val entityType = getStringCol("entityType")
     val entityId = getStringCol("entityId")
@@ -107,7 +106,7 @@ object ESEventsUtil {
       getLongCol("creationTime"), creationTimeZone)
 
     Event(
-      eventId = Some(RowKey(result.getRow()).toString),
+      eventId = eventId,
       event = event,
       entityType = entityType,
       entityId = entityId,
@@ -118,6 +117,24 @@ object ESEventsUtil {
       tags = Seq(),
       prId = prId,
       creationTime = creationTime
+    )
+  }
+
+  def eventToPut(event: Event, appId: Int): Seq[Map[String, Any]] = {
+    Seq(
+      Map(
+        "eventId" -> event.eventId,
+        "event" -> event.event,
+        "entityType" -> event.entityType,
+        "entityId" -> event.entityId,
+        "targetEntityType" -> event.targetEntityType,
+        "targetEntityId" -> event.targetEntityId,
+        "properties" -> event.properties,
+        "eventTime" -> event.eventTime,
+        "tags" -> event.tags,
+        "prId" -> event.prId,
+        "creationTime" -> event.creationTime
+      )
     )
   }
 

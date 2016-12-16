@@ -24,6 +24,7 @@ import org.apache.predictionio.data.storage.{PEvents, Event}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.elasticsearch.hadoop.mr.EsInputFormat
+import org.elasticsearch.spark.rdd.EsSpark
 import org.joda.time.DateTime
 
 // TODO for elasticsearch
@@ -46,26 +47,31 @@ class ESPEvents extends PEvents {
     targetEntityId: Option[Option[String]] = None
     )(sc: SparkContext): RDD[Event] = {
 
-    // TODO ES Hadoop Configuration Builder 的なものがあるかを調査
+    // TODO: ES Hadoop Configuration Builder 的なものがあるかを調査
     // https://www.elastic.co/guide/en/elasticsearch/hadoop/current/configuration.html
 
     val conf = new Configuration()
-    conf.set("es.resource", "radio/artists"); // TODO Index/Type などPIOのルールを調べる
-    conf.set("es.query", "?q=me*"); // TODO クエリを決める
+    conf.set("es.resource", "pio/events"); // TODO: Index/Type などPIOのルールを調べる
+    conf.set("es.query", "?q=*"); // TODO: クエリを決める
 
     val rdd = sc.newAPIHadoopRDD(conf, classOf[EsInputFormat[Text, MapWritable]],
       classOf[Text], classOf[MapWritable]
-    )//.map {
-//      case (key, doc) => ??? // PIOのEvent型変換
-//    }
+    ).map {
+      case (key, doc) => ESEventsUtil.resultToEvent(doc, appId)
+    }
 
-    ???
-
+    rdd
   }
 
   override
   def write(events: RDD[Event], appId: Int, channelId: Option[Int])(sc: SparkContext): Unit = {
-    ???
+    val conf = new Configuration()
+    conf.set("es.resource.write", "pio/events"); // TODO Index/Type などPIOのルールを調べる
+    conf.set("es.query", "?q=me*"); // TODO クエリを決める
+
+    events.map { event =>
+      ESEventsUtil.eventToPut(event, appId)
+    }.saveToEs("pio/events")
   }
 
   override
