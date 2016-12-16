@@ -20,7 +20,7 @@ package org.apache.predictionio.data.storage.elasticsearch
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.io.{Text, MapWritable}
-import org.apache.predictionio.data.storage.{PEvents, Event}
+import org.apache.predictionio.data.storage.{StorageClientConfig, PEvents, Event}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.elasticsearch.hadoop.mr.EsInputFormat
@@ -32,7 +32,7 @@ import org.apache.spark.SparkConf
 import org.elasticsearch.spark._
 
 
-class ESPEvents extends PEvents {
+class ESPEvents(client: String, config: StorageClientConfig, namespace: String) extends PEvents {
 
   override
   def find(
