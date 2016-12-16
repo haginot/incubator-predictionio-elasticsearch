@@ -63,6 +63,41 @@ class ESLEvents(val client: Client, config: StorageClientConfig, val index: Stri
   def init(appId: Int, channelId: Option[Int]): Boolean = {
     // check namespace exist
     // TODO: 初期化はshellなどでできるようにする？
+    implicit val formats = DefaultFormats
+
+    val indices = client.admin.indices
+    val indexExistResponse = indices.prepareExists(index).get
+    if (!indexExistResponse.isExists) {
+      indices.prepareCreate(index).get
+    }
+    val typeExistResponse = indices.prepareTypesExists(index).setTypes(estype).get
+    if (!typeExistResponse.isExists) {
+      // TODO: マッピングはテンプレートで扱うデータに応じて動的に生成すべきなのでは。。。
+      val json =
+        (estype ->
+          ("properties" ->
+            ("eventId" -> ("type" -> "string") ~ ("index" -> "not_analyzed")) ~
+              ("event" -> ("type" -> "string") ~ ("index" -> "not_analyzed")) ~
+              ("entityType" -> ("type" -> "string") ~ ("index" -> "not_analyzed")) ~
+              ("entityId" -> ("type" -> "string") ~ ("index" -> "not_analyzed")) ~
+              ("targetEntityType" -> ("type" -> "string") ~ ("index" -> "not_analyzed")) ~
+              ("targetEntityId" -> ("type" -> "string") ~ ("index" -> "not_analyzed")) ~
+              ("properties" ->
+                ("type" -> "nested") ~
+                  ("properties" ->
+                    ("fields" -> ("type" -> "nested") ~
+                      ("properties" ->
+                        ("user" -> ("type" -> "long")) ~
+                          ("num" -> ("type" -> "long"))
+                        )))) ~
+              ("eventTime" -> ("type" -> "date")) ~
+              ("tags" -> ("type" -> "array")) ~
+              ("prId" -> ("type" -> "string") ~ ("index" -> "not_analyzed")) ~
+              ("creationTime" -> ("type" -> "date"))))
+      indices.preparePutMapping(index).setType(estype).
+        setSource(compact(render(json))).get
+    }
+
     true
   }
 
