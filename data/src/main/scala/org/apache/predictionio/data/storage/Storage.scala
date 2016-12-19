@@ -308,6 +308,7 @@ object Storage extends Logging {
         asInstanceOf[T]
     } catch {
       case e: IllegalArgumentException =>
+        // TODO: コンストラクタ引数の数のエラーメッセージのみで、型が合わないケースについて言及してないのイケてない
         error(
           "Unable to instantiate data object with class '" +
           constructor.getDeclaringClass.getName + " because its constructor" +

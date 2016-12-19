@@ -23,6 +23,7 @@ import org.apache.hadoop.io.{Text, MapWritable}
 import org.apache.predictionio.data.storage.{StorageClientConfig, PEvents, Event}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.hadoop.mr.EsInputFormat
 import org.elasticsearch.spark.rdd.EsSpark
 import org.joda.time.DateTime
@@ -32,7 +33,8 @@ import org.apache.spark.SparkConf
 import org.elasticsearch.spark._
 
 
-class ESPEvents(client: String, config: StorageClientConfig, namespace: String) extends PEvents {
+class ESPEvents( client: TransportClient, config: StorageClientConfig, namespace: String)
+  extends PEvents {
 
   override
   def find(
