@@ -85,8 +85,8 @@ object ESEventsUtil {
       result.get(col).asInstanceOf[LongWritable].get()
     }
 
-    val eventId = getOptStringCol("eventId") // TODO: use `_id` field?
-    val event = getStringCol("event")
+    val eventId = None // TODO: use `_id` field?
+//    val event = getStringCol("event")
     val entityType = getStringCol("entityType")
     val entityId = getStringCol("entityId")
     val targetEntityType = getOptStringCol("targetEntityType")
@@ -107,7 +107,7 @@ object ESEventsUtil {
 
     Event(
       eventId = eventId,
-      event = event,
+      event = "event",
       entityType = entityType,
       entityId = entityId,
       targetEntityType = targetEntityType,

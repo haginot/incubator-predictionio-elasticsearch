@@ -53,13 +53,16 @@ class ESPEvents( client: TransportClient, config: StorageClientConfig, namespace
     // https://www.elastic.co/guide/en/elasticsearch/hadoop/current/configuration.html
 
     val conf = new Configuration()
-    conf.set("es.resource", "pio/events"); // TODO: Index/Type などPIOのルールを調べる
+    conf.set("es.resource", "pio_event/events"); // TODO: Index/Type などPIOのルールを調べる
     conf.set("es.query", "?q=*"); // TODO: クエリを決める
 
     val rdd = sc.newAPIHadoopRDD(conf, classOf[EsInputFormat[Text, MapWritable]],
       classOf[Text], classOf[MapWritable]
     ).map {
-      case (key, doc) => ESEventsUtil.resultToEvent(doc, appId)
+      case (key, doc) => {
+        require(doc != null, "doc is null!")
+        ESEventsUtil.resultToEvent(doc, appId)
+      }
     }
 
     rdd
@@ -68,7 +71,7 @@ class ESPEvents( client: TransportClient, config: StorageClientConfig, namespace
   override
   def write(events: RDD[Event], appId: Int, channelId: Option[Int])(sc: SparkContext): Unit = {
     val conf = new Configuration()
-    conf.set("es.resource.write", "pio/events"); // TODO Index/Type などPIOのルールを調べる
+    conf.set("es.resource.write", "pio_event/events"); // TODO Index/Type などPIOのルールを調べる
     conf.set("es.query", "?q=me*"); // TODO クエリを決める
 
     events.map { event =>
