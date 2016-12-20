@@ -17,6 +17,30 @@
 
 name := "apache-predictionio-data"
 
+// TODO: for packing spark by sbt-assembly
+
+mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+{
+  case PathList("javax", "servlet", xs @ _*) => MergeStrategy.first
+  case PathList("javax", "activation", xs @ _*) => MergeStrategy.first
+  case PathList("org", "apache", xs @ _*) => MergeStrategy.first
+  case PathList("com", "google", xs @ _*) => MergeStrategy.first
+  case PathList("com", "esotericsoftware", xs @ _*) => MergeStrategy.first
+  case PathList("com", "codahale", xs @ _*) => MergeStrategy.first
+  case PathList("com", "yammer", xs @ _*) => MergeStrategy.first
+  case PathList("org", "elasticsearch", xs @ _*) => MergeStrategy.first
+  case PathList("apache", "spark", xs @ _*) => MergeStrategy.first
+  case PathList("org", "spark-project", xs @ _*) => MergeStrategy.first
+  case "about.html" => MergeStrategy.rename
+  case "META-INF/ECLIPSEF.RSA" => MergeStrategy.first
+  case "META-INF/mailcap" => MergeStrategy.first
+  case "META-INF/mimetypes.default" => MergeStrategy.first
+  case "plugin.properties" => MergeStrategy.first
+  case "log4j.properties" => MergeStrategy.first
+  case x => old(x)
+}
+}
+
 libraryDependencies ++= Seq(
   "com.github.nscala-time" %% "nscala-time"    % "2.6.0",
   "commons-codec"           % "commons-codec"  % "1.9",
@@ -58,3 +82,4 @@ libraryDependencies ++= Seq(
 parallelExecution in Test := false
 
 pomExtra := childrenPomExtra.value
+
