@@ -18,7 +18,7 @@
 
 package org.apache.predictionio.data.storage.elasticsearch
 
-import org.apache.hadoop.io.{LongWritable, Text, MapWritable}
+import org.apache.hadoop.io.{DoubleWritable, LongWritable, Text, MapWritable}
 import org.apache.predictionio.data.storage.Event
 import org.apache.predictionio.data.storage.EventValidation
 import org.apache.predictionio.data.storage.DataMap
@@ -51,10 +51,10 @@ object ESEventsUtil {
 
   implicit val formats = DefaultFormats
 
-  def resultToEvent(result: MapWritable, appId: Int): Event = {
+  def resultToEvent(id: Text, result: MapWritable, appId: Int): Event = {
 
     def getStringCol(col: String): String = {
-      val r = result.get(col).asInstanceOf[Text]
+      val r = result.get(new Text(col)).asInstanceOf[Text]
       require(r != null,
         s"Failed to get value for column ${col}. " +
           s"StringBinary: ${r.getBytes()}.")
@@ -63,7 +63,7 @@ object ESEventsUtil {
     }
 
     def getLongCol(col: String): Long = {
-      val r = result.get(col).asInstanceOf[LongWritable]
+      val r = result.get(new Text(col)).asInstanceOf[LongWritable]
       require(r != null,
         s"Failed to get value for column ${col}. " +
           s"StringBinary: ${r.get()}.")
@@ -72,42 +72,56 @@ object ESEventsUtil {
     }
 
     def getOptStringCol(col: String): Option[String] = {
-      val r = result.get(col).asInstanceOf[Text]
+      val r = result.get(new Text(col))
       if (r == null) {
         None
       } else {
-        Some(r.toString())
+        Some(r.asInstanceOf[Text].toString())
       }
     }
 
     // TODO: elasticsearch timestamp format
     def getTimestamp(col: String): Long = {
-      result.get(col).asInstanceOf[LongWritable].get()
+      result.get(new Text(col)).asInstanceOf[LongWritable].get()
     }
 
-    val eventId = None // TODO: use `_id` field?
-//    val event = getStringCol("event")
+    // TODO: to accept to variable format
+    val rating = result
+      .get(new Text("properties")).asInstanceOf[MapWritable]
+      .get(new Text("fields")).asInstanceOf[MapWritable]
+      .get(new Text("rating")).asInstanceOf[DoubleWritable]
+    val properties: DataMap =
+      if (rating != null) DataMap(s"""{"rating":${rating.get()}}""")
+      else DataMap()
+
+
+    val eventId = Some(id.toString) // TODO: use `_id` field?
+    val event = getStringCol("event")
     val entityType = getStringCol("entityType")
     val entityId = getStringCol("entityId")
     val targetEntityType = getOptStringCol("targetEntityType")
     val targetEntityId = getOptStringCol("targetEntityId")
-    val properties: DataMap = getOptStringCol("properties")
-      .map(s => DataMap(read[JObject](s))).getOrElse(DataMap())
     val prId = getOptStringCol("prId")
     val eventTimeZone = getOptStringCol("eventTimeZone")
       .map(DateTimeZone.forID(_))
       .getOrElse(EventValidation.defaultTimeZone)
-    val eventTime = new DateTime(
-      getLongCol("eventTime"), eventTimeZone)
+//    val eventTime = new DateTime(
+//      getLongCol("eventTime"), eventTimeZone)
+    val eventTime = new DateTime(20170101, eventTimeZone)
+//    TODO: Event ES のeventTimeがDataMap()になっている件
     val creationTimeZone = getOptStringCol("creationTimeZone")
       .map(DateTimeZone.forID(_))
       .getOrElse(EventValidation.defaultTimeZone)
+//    val creationTime: DateTime = new DateTime(
+//      getLongCol("creationTime"), creationTimeZone)
     val creationTime: DateTime = new DateTime(
-      getLongCol("creationTime"), creationTimeZone)
+      20170101, creationTimeZone)
+//    TODO: Event ES のcreationTimeがDataMap()になっている件
+
 
     Event(
       eventId = eventId,
-      event = "event",
+      event = event,
       entityType = entityType,
       entityId = entityId,
       targetEntityType = targetEntityType,

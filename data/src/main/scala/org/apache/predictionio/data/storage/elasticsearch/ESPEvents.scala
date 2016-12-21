@@ -60,8 +60,7 @@ class ESPEvents( client: TransportClient, config: StorageClientConfig, namespace
       classOf[Text], classOf[MapWritable]
     ).map {
       case (key, doc) => {
-        require(doc != null, "doc is null!")
-        ESEventsUtil.resultToEvent(doc, appId)
+        ESEventsUtil.resultToEvent(key, doc, appId)
       }
     }
 
