@@ -303,6 +303,7 @@ object Storage extends Logging {
     }
     val constructor = clazz.getConstructors()(0)
     try {
+      // TODO ストレージのクライアントのインスタンスを返す
       constructor.newInstance(ctorArgs: _*).
         asInstanceOf[T]
     } catch {

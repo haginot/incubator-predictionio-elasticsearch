@@ -42,7 +42,7 @@ class StorageClient(val config: StorageClientConfig) extends BaseStorageClient
       transportClient.addTransportAddress(
         new InetSocketTransportAddress(hp._1, hp._2))
     }
-    transportClient
+    transportClient // TODO ESへのアクセス
   } catch {
     case e: ConnectTransportException =>
       throw new StorageClientException(e.getMessage, e)
