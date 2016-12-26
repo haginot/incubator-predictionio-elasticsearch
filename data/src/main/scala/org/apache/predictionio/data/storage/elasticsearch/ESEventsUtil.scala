@@ -86,12 +86,20 @@ object ESEventsUtil {
     }
 
     // TODO: to accept to variable format
-    val rating = result
+    val tmp = result
       .get(new Text("properties")).asInstanceOf[MapWritable]
       .get(new Text("fields")).asInstanceOf[MapWritable]
-      .get(new Text("rating")).asInstanceOf[DoubleWritable]
+      .get(new Text("rating"))
+
+    val rating =
+      if (tmp.isInstanceOf[DoubleWritable]) tmp.asInstanceOf[DoubleWritable]
+      else if (tmp.isInstanceOf[LongWritable]) {
+        new DoubleWritable(tmp.asInstanceOf[LongWritable].get().toDouble)
+      }
+      else null
+
     val properties: DataMap =
-      if (rating != null) DataMap(s"""{"rating":${rating.get()}}""")
+      if (rating != null) DataMap(s"""{"rating":${rating.get().toString}}""")
       else DataMap()
 
 
