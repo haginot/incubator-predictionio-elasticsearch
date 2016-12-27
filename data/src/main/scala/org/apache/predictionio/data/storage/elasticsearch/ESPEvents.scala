@@ -52,9 +52,19 @@ class ESPEvents( client: TransportClient, config: StorageClientConfig, namespace
     // TODO: ES Hadoop Configuration Builder 的なものがあるかを調査
     // https://www.elastic.co/guide/en/elasticsearch/hadoop/current/configuration.html
 
+    // TODO: jacksonを使って書く & ESEventsUtilへ移動
+    val must_query = Seq(
+      entityType.map(x => s"""{"term":{"entityType":"${x}"}}"""),
+      targetEntityType.flatMap(xx => xx.map(x => s"""{"term":{"targetEntityType":"${x}"}}""")),
+      eventNames
+        .map{xx => xx.map(x => "\"%s\"".format(x))}
+        .map(x => s"""{"terms":{"event":[${x.mkString(",")}]}}""")
+    ).flatten.mkString(",")
+    val query = s"""{"query":{"bool":{"must":[${must_query}]}}}"""
+
     val conf = new Configuration()
     conf.set("es.resource", "pio_event/events"); // TODO: Index/Type などPIOのルールを調べる
-    conf.set("es.query", "?q=*"); // TODO: クエリを決める
+    conf.set("es.query", query); // TODO: クエリは動的に生成する
 
     val rdd = sc.newAPIHadoopRDD(conf, classOf[EsInputFormat[Text, MapWritable]],
       classOf[Text], classOf[MapWritable]
